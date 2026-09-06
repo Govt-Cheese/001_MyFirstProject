@@ -48,7 +48,7 @@
       margin-bottom: 8px;
       font-weight: bold;
     }
-    input {
+    input, textarea {
       width: 100%;
       padding: 14px;
       border: 1px solid #94a3b8;
@@ -97,7 +97,7 @@
       background: #2563eb;
       color: white;
     }
-    button:focus-visible, input:focus-visible {
+    button:focus-visible, input:focus-visible, textarea:focus-visible, .donation-scroll:focus-visible {
       outline: 3px solid #1e293b;
       outline-offset: 4px;
     }
@@ -116,6 +116,17 @@
       border-top: 1px solid #cbd5e1;
     }
     .cheese-counter h2 { margin: 0 0 12px; }
+    .cheese-layout { display: flex; gap: 24px; width: 100%; max-width: 760px; align-items: flex-start; }
+    .cheese-layout > * { flex: 1; min-width: 0; }
+    .donation-panel { margin-top: 32px; padding-top: 24px; text-align: left; }
+    .donation-panel h2 { margin: 0 0 12px; font-size: 1.125rem; }
+    .donation-scroll { height: 240px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: white; }
+    #donation-list { list-style: none; padding: 0; margin: 0; }
+    #donation-list li { padding: 10px 0; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; white-space: pre-wrap; font-size: 0.875rem; }
+    #donation-list strong { display: block; }
+    #donation-help, #donation-empty { font-size: 0.875rem; margin: 8px 0 16px; }
+    #donation-comment { resize: vertical; margin-bottom: 12px; }
+    @media (max-width: 640px) { .cheese-layout { flex-direction: column; align-items: stretch; } .cheese-counter { max-width: none; } }
     #cheese-count {
       margin: 0 0 16px;
       font-size: 2.5rem;
@@ -156,17 +167,29 @@
       <p id="message" aria-live="polite"></p>
     </form>
     <!-- A separate section holds the counter and its button. -->
+    <div class="cheese-layout">
     <section class="cheese-counter" aria-labelledby="cheese-heading">
-      <h2 id="cheese-heading">Cheese Counter</h2>
+      <h2 id="cheese-heading">Cheese segments donated by the Government, thanks to generousity personified visitors like YOU!</h2>
       <p id="cheese-count" aria-live="polite" aria-atomic="true">—</p>
-      <button id="add-cheese-button" type="button" disabled>add a unit of Cheese</button>
+      <label id="comment-label" for="donation-comment">Optional comment</label>
+      <textarea id="donation-comment" rows="2" maxlength="280" aria-describedby="donation-help"></textarea>
+      <p id="donation-help">Your comment will be public. Up to 280 characters.</p>
+      <button id="add-cheese-button" type="button" disabled>donate Cheese 🧀</button>
       <p id="cheese-status" role="status">The shared counter is not connected yet.</p>
     </section>
+    <aside class="donation-panel" aria-labelledby="donation-heading">
+      <h2 id="donation-heading">Recent donations</h2>
+      <div class="donation-scroll" tabindex="0" role="region" aria-labelledby="donation-heading">
+        <p id="donation-empty" role="status">Loading donations…</p>
+        <ul id="donation-list"></ul>
+      </div>
+    </aside>
+    </div>
   </main>
   <p id="footer-note" class="footer-note">Thank you Sharon for pointing me to the tools. This was like a caveman learning how to use a web browser for the Information Age.</p>
   <footer lang="en">
     <!-- Update this date and time whenever you edit the website. -->
-    Last edited: <time datetime="2026-09-05T23:42:42-05:00">2026-09-05 23:42:42 (UTC-05:00)</time>
+    Last edited: <time datetime="2026-09-06T11:26:57-05:00">2026-09-06 11:26:57 (UTC-05:00)</time>
   </footer>
   <script>
     // Save references to the HTML elements so we can use them below.
@@ -190,6 +213,35 @@
       de: { setup: 'Der gemeinsame Zähler ist noch nicht verbunden.', loading: 'Verbindung wird hergestellt…', ready: 'Mit allen Besuchern geteilt.', offline: 'Verbindung unterbrochen. Neuer Verbindungsversuch…', saving: 'Käse wird hinzugefügt…', error: 'Der Zähler ist nicht verfügbar. Bitte lade die Seite neu.', failed: 'Käse konnte nicht hinzugefügt werden. Bitte versuche es erneut.' }
     };
     let counterState = 'setup';
+    const commentInput = document.getElementById('donation-comment');
+    const donationWords = {
+      en: { label: 'Optional comment', help: 'Your comment will be public. Up to 280 characters.', heading: 'Recent donations', loading: 'Loading donations…', empty: 'No donations recorded yet.', error: 'Donation comments are unavailable. Please try refreshing.', unit: 'Cheese #', blank: 'No comment' },
+      'zh-CN': { label: '留言（可选）', help: '留言将公开显示，最多280个字符。', heading: '最近的捐赠', loading: '正在加载捐赠…', empty: '暂无捐赠记录。', error: '无法加载留言，请刷新重试。', unit: '奶酪 #', blank: '未留言' },
+      de: { label: 'Optionaler Kommentar', help: 'Dein Kommentar ist öffentlich. Maximal 280 Zeichen.', heading: 'Neueste Spenden', loading: 'Spenden werden geladen…', empty: 'Noch keine Spenden erfasst.', error: 'Kommentare sind nicht verfügbar. Bitte lade die Seite neu.', unit: 'Käse #', blank: 'Kein Kommentar' }
+    };
+    let donations = [];
+    let donationState = 'loading';
+    function renderDonations() {
+      const words = donationWords[currentLanguage];
+      document.getElementById('comment-label').textContent = words.label;
+      document.getElementById('donation-help').textContent = words.help;
+      document.getElementById('donation-heading').textContent = words.heading;
+      const empty = document.getElementById('donation-empty');
+      empty.hidden = donationState === 'ready' && donations.length > 0;
+      empty.textContent = words[donationState === 'ready' ? 'empty' : donationState];
+      const list = document.getElementById('donation-list');
+      list.replaceChildren();
+      donations.forEach(function (entry) {
+        const item = document.createElement('li');
+        const label = document.createElement('strong');
+        label.textContent = words.unit + entry.unit;
+        const comment = document.createElement('span');
+        // Plain text prevents visitor comments from becoming executable HTML.
+        comment.textContent = entry.comment || words.blank;
+        item.append(label, comment);
+        list.append(item);
+      });
+    }
     function showCounterStatus() {
       document.getElementById('cheese-status').textContent = counterMessages[currentLanguage][counterState];
     }
@@ -200,18 +252,31 @@
       showCounterStatus();
       try {
         // Load Firebase separately so the greeting still works if loading fails.
-        const [{ initializeApp }, { getDatabase, ref, onValue, set, increment }] = await Promise.all([
+        const [{ initializeApp }, { getDatabase, ref, onValue, get, update, query, orderByChild, limitToLast }] = await Promise.all([
           import('https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js'),
           import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js')
         ]);
         const database = getDatabase(initializeApp(firebaseConfig));
         const counterRef = ref(database, 'cheeseTotal');
+        let latestTotal = 0;
+        // Fetch only the newest 50 entries; older donations stay saved in Firebase.
+        onValue(query(ref(database, 'donations'), orderByChild('unit'), limitToLast(50)), function (snapshot) {
+          donations = [];
+          snapshot.forEach(function (child) {
+            const entry = child.val();
+            if (entry && Number.isSafeInteger(entry.unit) && typeof entry.comment === 'string') donations.push(entry);
+          });
+          donations.reverse();
+          donationState = 'ready';
+          renderDonations();
+        }, function () { donationState = 'error'; renderDonations(); });
         let connected = false;
         let loaded = false;
         let saving = false;
         let broken = false;
         function updateCounterState() {
           addCheeseButton.disabled = !connected || !loaded || saving || broken;
+          commentInput.disabled = saving;
           counterState = broken ? 'error' : !connected ? 'offline' : saving ? 'saving' : loaded ? 'ready' : 'loading';
           showCounterStatus();
         }
@@ -229,17 +294,38 @@
           const total = snapshot.val() ?? 0;
           if (!Number.isSafeInteger(total) || total < 0) { counterError(); return; }
           cheeseCount.textContent = total;
+          latestTotal = total;
           loaded = true;
           updateCounterState();
         }, counterError);
         addCheeseButton.addEventListener('click', async function () {
           if (addCheeseButton.disabled) return;
+          if (!commentInput.reportValidity()) return;
+          const comment = commentInput.value.trim();
           saving = true;
           updateCounterState();
           let failed = false;
           try {
-            // The server adds one atomically, so simultaneous clicks are not lost.
-            await set(counterRef, increment(1));
+            // Save the number and its comment together. Rules reject stale numbers.
+            // If another visitor wins the same number, retry with the new total.
+            let total = latestTotal;
+            for (let attempt = 0; attempt < 10; attempt++) {
+              const unit = total + 1;
+              if (!Number.isSafeInteger(unit)) throw new Error('Counter limit reached');
+              try {
+                await update(ref(database), {
+                  cheeseTotal: unit,
+                  ['donations/' + unit]: { unit: unit, comment: comment }
+                });
+                commentInput.value = '';
+                break;
+              } catch (error) {
+                if (attempt === 9 || error.code !== 'PERMISSION_DENIED') throw error;
+                const freshTotal = (await get(counterRef)).val() ?? 0;
+                if (!Number.isSafeInteger(freshTotal) || freshTotal <= total) throw error;
+                total = freshTotal;
+              }
+            }
           } catch (error) {
             failed = true;
           } finally {
@@ -253,6 +339,8 @@
         });
       } catch (error) {
         counterState = 'error';
+        donationState = 'error';
+        renderDonations();
         showCounterStatus();
       }
     }
@@ -260,7 +348,7 @@
     // Each language has its own set of words for the greeting app.
     const translations = {
       en: {
-        cheeseHeading: 'Cheese Counter', addCheese: 'add a unit of Cheese',
+        cheeseHeading: 'Cheese segments donated by the Government, thanks to generousity personified visitors like YOU!', addCheese: 'donate Cheese 🧀',
         title: 'Greetings! (Up here)', heading: 'A Greeting Machine',
         intro: 'Enter your name to get a friendly hello.', label: 'Your name',
         placeholder: 'Enter your name', hello: 'Say Hello', clear: 'Clear',
@@ -268,7 +356,7 @@
         note: 'Thank you Sharon for pointing me to the tools. This was like a caveman learning how to use a web browser for the Information Age.'
       },
       'zh-CN': {
-        cheeseHeading: '奶酪计数器', addCheese: '添加一份奶酪',
+        cheeseHeading: '感谢像你这样慷慨无私的访客，政府捐赠了这些奶酪块！', addCheese: '捐赠奶酪 🧀',
         title: '你好！（看这里）', heading: '问候生成器',
         intro: '输入你的名字，收获一声亲切的问候。', label: '你的名字',
         placeholder: '请输入你的名字', hello: '打个招呼', clear: '清除',
@@ -276,7 +364,7 @@
         note: '谢谢你，Sharon，为我指引了这些工具。这就像一个穴居人学习如何使用网页浏览器，以适应信息时代。'
       },
       de: {
-        cheeseHeading: 'Käsezähler', addCheese: 'Eine Einheit Käse hinzufügen',
+        cheeseHeading: 'Von der Regierung gespendete Käsestücke – dank Besuchern wie DIR, die Großzügigkeit verkörpern!', addCheese: 'Käse spenden 🧀',
         title: 'Hallo! (Hier oben)', heading: 'Eine Begrüßungsmaschine',
         intro: 'Gib deinen Namen ein, um freundlich begrüßt zu werden.', label: 'Dein Name',
         placeholder: 'Gib deinen Namen ein', hello: 'Hallo sagen', clear: 'Löschen',
@@ -322,6 +410,7 @@
         });
         showMessage();
         showCounterStatus();
+        renderDonations();
       });
     });
 
@@ -342,6 +431,32 @@
       nameInput.focus();
     });
     connectCounter();
+  </script>
+  <!-- Copy the JSON below into Firebase Realtime Database > Rules and publish it.
+       This is configuration for Firebase; the browser does not execute it.
+       Publish these rules together with this page: older pages cannot donate
+       without also creating the matching donation record. Existing totals stay intact. -->
+  <script id="firebase-database-rules" type="application/json">
+  {
+    "rules": {
+      "cheeseTotal": {
+        ".read": true,
+        ".write": "newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.isNumber() && newData.val() === data.val() + 1))",
+        ".validate": "newData.val() <= 9007199254740991 && !root.child('donations').child(newData.val() + '').exists() && newData.parent().child('donations').child(newData.val() + '').child('unit').val() === newData.val()"
+      },
+      "donations": {
+        ".read": true,
+        ".indexOn": ["unit"],
+        "$unit": {
+          ".write": "!data.exists() && newData.hasChildren(['unit', 'comment']) && ((!root.child('cheeseTotal').exists() && newData.child('unit').val() === 1) || newData.child('unit').val() === root.child('cheeseTotal').val() + 1) && newData.parent().parent().child('cheeseTotal').val() === newData.child('unit').val()",
+          ".validate": "newData.child('unit').isNumber() && $unit === newData.child('unit').val() + ''",
+          "unit": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 9007199254740991" },
+          "comment": { ".validate": "newData.isString() && newData.val().length <= 280" },
+          "$other": { ".validate": false }
+        }
+      }
+    }
+  }
   </script>
 </body>
 </html>
