@@ -159,7 +159,7 @@
     <!-- HTML describes the text field, buttons, and greeting area. -->
     <form id="greeting-form">
       <label for="name-input">Your name</label>
-      <input id="name-input" type="text" autocomplete="given-name" placeholder="Enter your name">
+      <input id="name-input" type="text" autocomplete="given-name" placeholder="Enter your name" maxlength="80">
       <div class="buttons">
         <button id="hello-button" type="submit">Say Hello</button>
         <button id="clear-button" type="button">Clear</button>
@@ -173,7 +173,7 @@
       <p id="cheese-count" aria-live="polite" aria-atomic="true">—</p>
       <label id="comment-label" for="donation-comment">Optional comment</label>
       <textarea id="donation-comment" rows="2" maxlength="280" aria-describedby="donation-help"></textarea>
-      <p id="donation-help">Your comment will be public. Up to 280 characters.</p>
+      <p id="donation-help">Your name from above and comment will be public. Up to 280 comment characters.</p>
       <button id="add-cheese-button" type="button" disabled>donate Cheese 🧀</button>
       <p id="cheese-status" role="status">The shared counter is not connected yet.</p>
     </section>
@@ -189,7 +189,7 @@
   <p id="footer-note" class="footer-note">Thank you Sharon for pointing me to the tools. This was like a caveman learning how to use a web browser for the Information Age.</p>
   <footer lang="en">
     <!-- Update this date and time whenever you edit the website. -->
-    Last edited: <time datetime="2026-09-06T15:53:56-05:00">2026-09-06 15:53:56 (UTC-05:00)</time>
+    Last edited: <time datetime="2026-09-06T15:56:46-05:00">2026-09-06 15:56:46 (UTC-05:00)</time>
   </footer>
   <script>
     // Save references to the HTML elements so we can use them below.
@@ -215,9 +215,9 @@
     let counterState = 'setup';
     const commentInput = document.getElementById('donation-comment');
     const donationWords = {
-      en: { label: 'Optional comment', help: 'Your comment will be public. Up to 280 characters.', heading: 'Recent donations', loading: 'Loading donations…', empty: 'No comments on recent donations.', error: 'Donation comments are unavailable. Please try refreshing.', unit: 'Cheese #', blank: 'No comment' },
-      'zh-CN': { label: '留言（可选）', help: '留言将公开显示，最多280个字符。', heading: '最近的捐赠', loading: '正在加载捐赠…', empty: '最近的捐赠暂无留言。', error: '无法加载留言，请刷新重试。', unit: '奶酪 #', blank: '未留言' },
-      de: { label: 'Optionaler Kommentar', help: 'Dein Kommentar ist öffentlich. Maximal 280 Zeichen.', heading: 'Neueste Spenden', loading: 'Spenden werden geladen…', empty: 'Keine Kommentare zu den letzten Spenden.', error: 'Kommentare sind nicht verfügbar. Bitte lade die Seite neu.', unit: 'Käse #', blank: 'Kein Kommentar' }
+      en: { label: 'Optional comment', help: 'Your name from above and comment will be public. Up to 280 comment characters.', heading: 'Recent donations', loading: 'Loading donations…', empty: 'No comments on recent donations.', error: 'Donation comments are unavailable. Please try refreshing.', unit: 'Cheese #', blank: 'No comment' },
+      'zh-CN': { label: '留言（可选）', help: '上方填写的名字和留言将公开显示。留言最多280个字符。', heading: '最近的捐赠', loading: '正在加载捐赠…', empty: '最近的捐赠暂无留言。', error: '无法加载留言，请刷新重试。', unit: '奶酪 #', blank: '未留言' },
+      de: { label: 'Optionaler Kommentar', help: 'Dein Name von oben und dein Kommentar sind öffentlich. Maximal 280 Zeichen für den Kommentar.', heading: 'Neueste Spenden', loading: 'Spenden werden geladen…', empty: 'Keine Kommentare zu den letzten Spenden.', error: 'Kommentare sind nicht verfügbar. Bitte lade die Seite neu.', unit: 'Käse #', blank: 'Kein Kommentar' }
     };
     let donations = [];
     let donationState = 'loading';
@@ -234,7 +234,9 @@
       donations.forEach(function (entry) {
         const item = document.createElement('li');
         const label = document.createElement('strong');
-        label.textContent = words.unit + entry.unit;
+        const anonymous = { en: 'Anonymous', 'zh-CN': '匿名', de: 'Anonym' };
+        const donorName = typeof entry.name === 'string' && entry.name.trim() ? entry.name : anonymous[currentLanguage];
+        label.textContent = words.unit + entry.unit + ' — ' + donorName;
         const comment = document.createElement('span');
         // Plain text prevents visitor comments from becoming executable HTML.
         comment.textContent = entry.comment;
@@ -302,7 +304,10 @@
         addCheeseButton.addEventListener('click', async function () {
           if (addCheeseButton.disabled) return;
           if (!commentInput.reportValidity()) return;
+          if (!nameInput.reportValidity()) return;
           const comment = commentInput.value.trim();
+          // Save the name with this donation so later edits do not change its author.
+          const donorName = nameInput.value.trim();
           saving = true;
           updateCounterState();
           let failed = false;
@@ -316,7 +321,7 @@
               try {
                 await update(ref(database), {
                   cheeseTotal: unit,
-                  ['donations/' + unit]: { unit: unit, comment: comment }
+                  ['donations/' + unit]: { unit: unit, comment: comment, name: donorName }
                 });
                 commentInput.value = '';
                 break;
@@ -453,6 +458,7 @@
           ".validate": "newData.child('unit').isNumber() && $unit === newData.child('unit').val() + ''",
           "unit": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 9007199254740991" },
           "comment": { ".validate": "newData.isString() && newData.val().length <= 280" },
+          "name": { ".validate": "newData.isString() && newData.val().length <= 80" },
           "$other": { ".validate": false }
         }
       }
