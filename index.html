@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Greetings! (Up here)</title>
+  <title>A Greeting from Cheese</title>
   <style>
     /* CSS controls how the page looks. */
     * { box-sizing: border-box; }
@@ -74,6 +74,8 @@
       cursor: pointer;
     }
     button:hover { background: #1d4ed8; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    #cheese-status { margin: 12px 0 0; font-size: 0.875rem; }
     /* A row of small language badges sits above the main content. */
     .language-picker {
       display: flex;
@@ -105,6 +107,19 @@
       min-height: 1.6em;
       margin: 24px 0 0;
       overflow-wrap: anywhere;
+    }
+    .cheese-counter {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #cbd5e1;
+    }
+    .cheese-counter h2 { margin: 0 0 12px; }
+    #cheese-count {
+      margin: 0 0 16px;
+      font-size: 2.5rem;
+      font-weight: bold;
     }
     .footer-note, footer {
       color: #64748b;
@@ -140,11 +155,18 @@
       </div>
       <p id="message" aria-live="polite"></p>
     </form>
+    <!-- A separate section holds the counter and its button. -->
+    <section class="cheese-counter" aria-labelledby="cheese-heading">
+      <h2 id="cheese-heading">Cheese Counter</h2>
+      <p id="cheese-count" aria-live="polite" aria-atomic="true">—</p>
+      <button id="add-cheese-button" type="button" disabled>add a unit of Cheese</button>
+      <p id="cheese-status" role="status">The shared counter is not connected yet.</p>
+    </section>
   </main>
   <p id="footer-note" class="footer-note">Thank you Sharon for pointing me to the tools. This was like a caveman learning how to use a web browser for the Information Age.</p>
   <footer lang="en">
     <!-- Update this date and time whenever you edit the website. -->
-    Last edited: <time datetime="2026-09-05T23:09:19-05:00">2026-09-05 23:09:19 (UTC-05:00)</time>
+    Last edited: <time datetime="2026-09-05T23:42:42-05:00">2026-09-05 23:42:42 (UTC-05:00)</time>
   </footer>
   <script>
     // Save references to the HTML elements so we can use them below.
@@ -152,10 +174,93 @@
     const nameInput = document.getElementById('name-input');
     const message = document.getElementById('message');
     const clearButton = document.getElementById('clear-button');
+    const cheeseCount = document.getElementById('cheese-count');
+    const addCheeseButton = document.getElementById('add-cheese-button');
+    // These public settings connect this webpage to your Firebase project.
+    const firebaseConfig = {
+      apiKey: 'AIzaSyBAq3AnL0q9mXiMbTjzPboN3J6DNKyZZns',
+      authDomain: 'myfirstproject-2de4f.firebaseapp.com',
+      databaseURL: 'https://myfirstproject-2de4f-default-rtdb.firebaseio.com',
+      projectId: 'myfirstproject-2de4f',
+      appId: '1:758305308303:web:4d32dc10a73c6991d6bafa'
+    };
+    const counterMessages = {
+      en: { setup: 'The shared counter is not connected yet.', loading: 'Connecting…', ready: 'Shared with every visitor.', offline: 'Connection lost. Reconnecting…', saving: 'Adding cheese…', error: 'The counter is unavailable. Refresh to try again.', failed: 'Could not add cheese. Please try again.' },
+      'zh-CN': { setup: '共享计数器尚未连接。', loading: '正在连接…', ready: '所有访客共享此计数。', offline: '连接已断开，正在重新连接…', saving: '正在添加奶酪…', error: '计数器暂时不可用。请刷新重试。', failed: '无法添加奶酪。请重试。' },
+      de: { setup: 'Der gemeinsame Zähler ist noch nicht verbunden.', loading: 'Verbindung wird hergestellt…', ready: 'Mit allen Besuchern geteilt.', offline: 'Verbindung unterbrochen. Neuer Verbindungsversuch…', saving: 'Käse wird hinzugefügt…', error: 'Der Zähler ist nicht verfügbar. Bitte lade die Seite neu.', failed: 'Käse konnte nicht hinzugefügt werden. Bitte versuche es erneut.' }
+    };
+    let counterState = 'setup';
+    function showCounterStatus() {
+      document.getElementById('cheese-status').textContent = counterMessages[currentLanguage][counterState];
+    }
+
+    async function connectCounter() {
+      if (!firebaseConfig.apiKey || !firebaseConfig.databaseURL || !firebaseConfig.projectId || !firebaseConfig.appId) return;
+      counterState = 'loading';
+      showCounterStatus();
+      try {
+        // Load Firebase separately so the greeting still works if loading fails.
+        const [{ initializeApp }, { getDatabase, ref, onValue, set, increment }] = await Promise.all([
+          import('https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js'),
+          import('https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js')
+        ]);
+        const database = getDatabase(initializeApp(firebaseConfig));
+        const counterRef = ref(database, 'cheeseTotal');
+        let connected = false;
+        let loaded = false;
+        let saving = false;
+        let broken = false;
+        function updateCounterState() {
+          addCheeseButton.disabled = !connected || !loaded || saving || broken;
+          counterState = broken ? 'error' : !connected ? 'offline' : saving ? 'saving' : loaded ? 'ready' : 'loading';
+          showCounterStatus();
+        }
+        function counterError() {
+          broken = true;
+          cheeseCount.textContent = '—';
+          updateCounterState();
+        }
+        onValue(ref(database, '.info/connected'), function (snapshot) {
+          connected = snapshot.val() === true;
+          updateCounterState();
+        }, counterError);
+        // Firebase sends the saved total whenever any visitor changes it.
+        onValue(counterRef, function (snapshot) {
+          const total = snapshot.val() ?? 0;
+          if (!Number.isSafeInteger(total) || total < 0) { counterError(); return; }
+          cheeseCount.textContent = total;
+          loaded = true;
+          updateCounterState();
+        }, counterError);
+        addCheeseButton.addEventListener('click', async function () {
+          if (addCheeseButton.disabled) return;
+          saving = true;
+          updateCounterState();
+          let failed = false;
+          try {
+            // The server adds one atomically, so simultaneous clicks are not lost.
+            await set(counterRef, increment(1));
+          } catch (error) {
+            failed = true;
+          } finally {
+            saving = false;
+            updateCounterState();
+            if (failed && connected && !broken) {
+              counterState = 'failed';
+              showCounterStatus();
+            }
+          }
+        });
+      } catch (error) {
+        counterState = 'error';
+        showCounterStatus();
+      }
+    }
 
     // Each language has its own set of words for the greeting app.
     const translations = {
       en: {
+        cheeseHeading: 'Cheese Counter', addCheese: 'add a unit of Cheese',
         title: 'Greetings! (Up here)', heading: 'A Greeting Machine',
         intro: 'Enter your name to get a friendly hello.', label: 'Your name',
         placeholder: 'Enter your name', hello: 'Say Hello', clear: 'Clear',
@@ -163,6 +268,7 @@
         note: 'Thank you Sharon for pointing me to the tools. This was like a caveman learning how to use a web browser for the Information Age.'
       },
       'zh-CN': {
+        cheeseHeading: '奶酪计数器', addCheese: '添加一份奶酪',
         title: '你好！（看这里）', heading: '问候生成器',
         intro: '输入你的名字，收获一声亲切的问候。', label: '你的名字',
         placeholder: '请输入你的名字', hello: '打个招呼', clear: '清除',
@@ -170,6 +276,7 @@
         note: '谢谢你，Sharon，为我指引了这些工具。这就像一个穴居人学习如何使用网页浏览器，以适应信息时代。'
       },
       de: {
+        cheeseHeading: 'Käsezähler', addCheese: 'Eine Einheit Käse hinzufügen',
         title: 'Hallo! (Hier oben)', heading: 'Eine Begrüßungsmaschine',
         intro: 'Gib deinen Namen ein, um freundlich begrüßt zu werden.', label: 'Dein Name',
         placeholder: 'Gib deinen Namen ein', hello: 'Hallo sagen', clear: 'Löschen',
@@ -202,6 +309,8 @@
         document.title = words.title;
         document.getElementById('heading').textContent = words.heading;
         document.getElementById('intro').textContent = words.intro;
+        document.getElementById('cheese-heading').textContent = words.cheeseHeading;
+        addCheeseButton.textContent = words.addCheese;
         // Change the thank-you note to the selected language, too.
         document.getElementById('footer-note').textContent = words.note;
         document.querySelector('label[for="name-input"]').textContent = words.label;
@@ -212,6 +321,7 @@
           languageButton.setAttribute('aria-pressed', languageButton === button ? 'true' : 'false');
         });
         showMessage();
+        showCounterStatus();
       });
     });
 
@@ -231,6 +341,7 @@
       showMessage();
       nameInput.focus();
     });
+    connectCounter();
   </script>
 </body>
 </html>
