@@ -125,8 +125,6 @@
   <nav class="language-picker" aria-label="Language">
     <button type="button" data-language="en" lang="en" aria-label="English" title="English" aria-pressed="true">EN</button>
     <button type="button" data-language="zh-CN" lang="zh-CN" aria-label="简体中文" title="简体中文" aria-pressed="false">CN</button>
-    <button type="button" data-language="es" lang="es" aria-label="Español" title="Español" aria-pressed="false">ES</button>
-    <button type="button" data-language="fr" lang="fr" aria-label="Français" title="Français" aria-pressed="false">FR</button>
     <button type="button" data-language="de" lang="de" aria-label="Deutsch" title="Deutsch" aria-pressed="false">DE</button>
   </nav>
   <main>
@@ -143,10 +141,10 @@
       <p id="message" aria-live="polite"></p>
     </form>
   </main>
-  <p class="footer-note" lang="en">Thank you Sharon for educating me with the tools. This was akin to teaching someone how to use a web browser in the Information Age.</p>
+  <p id="footer-note" class="footer-note">Thank you Sharon for pointing me to the tools. This was like a caveman learning how to use a web browser for the Information Age.</p>
   <footer lang="en">
     <!-- Update this date and time whenever you edit the website. -->
-    Last edited: <time datetime="2026-09-05T21:47:14-05:00">2026-09-05 21:47:14 (UTC-05:00)</time>
+    Last edited: <time datetime="2026-09-05T23:09:19-05:00">2026-09-05 23:09:19 (UTC-05:00)</time>
   </footer>
   <script>
     // Save references to the HTML elements so we can use them below.
@@ -161,31 +159,22 @@
         title: 'Greetings! (Up here)', heading: 'A Greeting Machine',
         intro: 'Enter your name to get a friendly hello.', label: 'Your name',
         placeholder: 'Enter your name', hello: 'Say Hello', clear: 'Clear',
-        empty: 'Please enter your name.', before: 'Hello, ', after: '!'
+        empty: 'Please enter your name.', before: 'Hello, ', after: '!',
+        note: 'Thank you Sharon for pointing me to the tools. This was like a caveman learning how to use a web browser for the Information Age.'
       },
       'zh-CN': {
         title: '你好！（看这里）', heading: '问候生成器',
         intro: '输入你的名字，收获一声亲切的问候。', label: '你的名字',
         placeholder: '请输入你的名字', hello: '打个招呼', clear: '清除',
-        empty: '请输入你的名字。', before: '你好，', after: '！'
-      },
-      es: {
-        title: '¡Saludos! (Aquí arriba)', heading: 'Una máquina de saludos',
-        intro: 'Escribe tu nombre para recibir un saludo amistoso.', label: 'Tu nombre',
-        placeholder: 'Escribe tu nombre', hello: 'Saludar', clear: 'Borrar',
-        empty: 'Por favor, escribe tu nombre.', before: '¡Hola, ', after: '!'
-      },
-      fr: {
-        title: 'Bonjour ! (Ici en haut)', heading: 'Une machine à salutations',
-        intro: 'Saisis ton prénom pour recevoir un bonjour chaleureux.', label: 'Ton prénom',
-        placeholder: 'Saisis ton prénom', hello: 'Dire bonjour', clear: 'Effacer',
-        empty: 'Merci de saisir ton prénom.', before: 'Bonjour, ', after: ' !'
+        empty: '请输入你的名字。', before: '你好，', after: '！',
+        note: '谢谢你，Sharon，为我指引了这些工具。这就像一个穴居人学习如何使用网页浏览器，以适应信息时代。'
       },
       de: {
         title: 'Hallo! (Hier oben)', heading: 'Eine Begrüßungsmaschine',
         intro: 'Gib deinen Namen ein, um freundlich begrüßt zu werden.', label: 'Dein Name',
         placeholder: 'Gib deinen Namen ein', hello: 'Hallo sagen', clear: 'Löschen',
-        empty: 'Bitte gib deinen Namen ein.', before: 'Hallo, ', after: '!'
+        empty: 'Bitte gib deinen Namen ein.', before: 'Hallo, ', after: '!',
+        note: 'Danke, Sharon, dass du mich auf diese Werkzeuge aufmerksam gemacht hast. Das war, als würde ein Höhlenmensch lernen, einen Webbrowser für das Informationszeitalter zu benutzen.'
       }
     };
     let currentLanguage = 'en';
@@ -213,6 +202,8 @@
         document.title = words.title;
         document.getElementById('heading').textContent = words.heading;
         document.getElementById('intro').textContent = words.intro;
+        // Change the thank-you note to the selected language, too.
+        document.getElementById('footer-note').textContent = words.note;
         document.querySelector('label[for="name-input"]').textContent = words.label;
         nameInput.placeholder = words.placeholder;
         document.getElementById('hello-button').textContent = words.hello;
