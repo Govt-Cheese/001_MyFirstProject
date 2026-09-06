@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -189,7 +189,7 @@
   <p id="footer-note" class="footer-note">Thank you Sharon for pointing me to the tools. This was like a caveman learning how to use a web browser for the Information Age.</p>
   <footer lang="en">
     <!-- Update this date and time whenever you edit the website. -->
-    Last edited: <time datetime="2026-09-06T11:26:57-05:00">2026-09-06 11:26:57 (UTC-05:00)</time>
+    Last edited: <time datetime="2026-09-06T15:53:56-05:00">2026-09-06 15:53:56 (UTC-05:00)</time>
   </footer>
   <script>
     // Save references to the HTML elements so we can use them below.
@@ -215,9 +215,9 @@
     let counterState = 'setup';
     const commentInput = document.getElementById('donation-comment');
     const donationWords = {
-      en: { label: 'Optional comment', help: 'Your comment will be public. Up to 280 characters.', heading: 'Recent donations', loading: 'Loading donations…', empty: 'No donations recorded yet.', error: 'Donation comments are unavailable. Please try refreshing.', unit: 'Cheese #', blank: 'No comment' },
-      'zh-CN': { label: '留言（可选）', help: '留言将公开显示，最多280个字符。', heading: '最近的捐赠', loading: '正在加载捐赠…', empty: '暂无捐赠记录。', error: '无法加载留言，请刷新重试。', unit: '奶酪 #', blank: '未留言' },
-      de: { label: 'Optionaler Kommentar', help: 'Dein Kommentar ist öffentlich. Maximal 280 Zeichen.', heading: 'Neueste Spenden', loading: 'Spenden werden geladen…', empty: 'Noch keine Spenden erfasst.', error: 'Kommentare sind nicht verfügbar. Bitte lade die Seite neu.', unit: 'Käse #', blank: 'Kein Kommentar' }
+      en: { label: 'Optional comment', help: 'Your comment will be public. Up to 280 characters.', heading: 'Recent donations', loading: 'Loading donations…', empty: 'No comments on recent donations.', error: 'Donation comments are unavailable. Please try refreshing.', unit: 'Cheese #', blank: 'No comment' },
+      'zh-CN': { label: '留言（可选）', help: '留言将公开显示，最多280个字符。', heading: '最近的捐赠', loading: '正在加载捐赠…', empty: '最近的捐赠暂无留言。', error: '无法加载留言，请刷新重试。', unit: '奶酪 #', blank: '未留言' },
+      de: { label: 'Optionaler Kommentar', help: 'Dein Kommentar ist öffentlich. Maximal 280 Zeichen.', heading: 'Neueste Spenden', loading: 'Spenden werden geladen…', empty: 'Keine Kommentare zu den letzten Spenden.', error: 'Kommentare sind nicht verfügbar. Bitte lade die Seite neu.', unit: 'Käse #', blank: 'Kein Kommentar' }
     };
     let donations = [];
     let donationState = 'loading';
@@ -237,7 +237,7 @@
         label.textContent = words.unit + entry.unit;
         const comment = document.createElement('span');
         // Plain text prevents visitor comments from becoming executable HTML.
-        comment.textContent = entry.comment || words.blank;
+        comment.textContent = entry.comment;
         item.append(label, comment);
         list.append(item);
       });
@@ -264,7 +264,8 @@
           donations = [];
           snapshot.forEach(function (child) {
             const entry = child.val();
-            if (entry && Number.isSafeInteger(entry.unit) && typeof entry.comment === 'string') donations.push(entry);
+            // Only show donations that include a comment; every donation still counts.
+            if (entry && Number.isSafeInteger(entry.unit) && typeof entry.comment === 'string' && entry.comment.trim() !== '') donations.push(entry);
           });
           donations.reverse();
           donationState = 'ready';
