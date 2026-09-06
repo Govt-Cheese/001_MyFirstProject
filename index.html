@@ -74,6 +74,27 @@
       cursor: pointer;
     }
     button:hover { background: #1d4ed8; }
+    /* A row of small language badges sits above the main content. */
+    .language-picker {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 16px 24px 0;
+    }
+    .language-picker button {
+      padding: 10px;
+      min-width: 44px;
+      min-height: 44px;
+      font-size: 0.875rem;
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .language-picker button:hover { background: #cbd5e1; }
+    .language-picker button[aria-pressed="true"] {
+      background: #2563eb;
+      color: white;
+    }
     button:focus-visible, input:focus-visible {
       outline: 3px solid #1e293b;
       outline-offset: 4px;
@@ -91,9 +112,9 @@
       line-height: 1.5;
     }
     .footer-note {
-      max-width: 640px;
-      margin: 0 auto;
+      margin: 0;
       padding: 0 24px;
+      text-align: left;
     }
     footer {
       padding: 20px 24px;
@@ -101,24 +122,31 @@
   </style>
 </head>
 <body>
+  <nav class="language-picker" aria-label="Language">
+    <button type="button" data-language="en" lang="en" aria-label="English" title="English" aria-pressed="true">EN</button>
+    <button type="button" data-language="zh-CN" lang="zh-CN" aria-label="简体中文" title="简体中文" aria-pressed="false">CN</button>
+    <button type="button" data-language="es" lang="es" aria-label="Español" title="Español" aria-pressed="false">ES</button>
+    <button type="button" data-language="fr" lang="fr" aria-label="Français" title="Français" aria-pressed="false">FR</button>
+    <button type="button" data-language="de" lang="de" aria-label="Deutsch" title="Deutsch" aria-pressed="false">DE</button>
+  </nav>
   <main>
-    <h1>A Greeting Machine</h1>
-    <p>Enter your name to get a friendly hello.</p>
+    <h1 id="heading">A Greeting Machine</h1>
+    <p id="intro">Enter your name to get a friendly hello.</p>
     <!-- HTML describes the text field, buttons, and greeting area. -->
     <form id="greeting-form">
       <label for="name-input">Your name</label>
       <input id="name-input" type="text" autocomplete="given-name" placeholder="Enter your name">
       <div class="buttons">
-        <button type="submit">Say Hello</button>
+        <button id="hello-button" type="submit">Say Hello</button>
         <button id="clear-button" type="button">Clear</button>
       </div>
       <p id="message" aria-live="polite"></p>
     </form>
   </main>
-  <p class="footer-note">Thank you for educating me with the tools I need. This is like teaching someone how to use a web browser in order to learn how to Google as a skill.</p>
-  <footer>
+  <p class="footer-note" lang="en">Thank you Sharon for educating me with the tools. This was akin to teaching someone how to use a web browser in the Information Age.</p>
+  <footer lang="en">
     <!-- Update this date and time whenever you edit the website. -->
-    Last edited: <time datetime="2026-09-05T20:41:54-05:00">2026-09-05 20:41:54 (UTC-05:00)</time>
+    Last edited: <time datetime="2026-09-05T21:43:28-05:00">2026-09-05 21:43:28 (UTC-05:00)</time>
   </footer>
   <script>
     // Save references to the HTML elements so we can use them below.
@@ -127,22 +155,89 @@
     const message = document.getElementById('message');
     const clearButton = document.getElementById('clear-button');
 
+    // Each language has its own set of words for the greeting app.
+    const translations = {
+      en: {
+        title: 'Greetings! (Up here)', heading: 'A Greeting Machine',
+        intro: 'Enter your name to get a friendly hello.', label: 'Your name',
+        placeholder: 'Enter your name', hello: 'Say Hello', clear: 'Clear',
+        empty: 'Please enter your name.', before: 'Hello, ', after: '!'
+      },
+      'zh-CN': {
+        title: '你好！（看这里）', heading: '问候生成器',
+        intro: '输入你的名字，收获一声亲切的问候。', label: '你的名字',
+        placeholder: '请输入你的名字', hello: '打个招呼', clear: '清除',
+        empty: '请输入你的名字。', before: '你好，', after: '！'
+      },
+      es: {
+        title: '¡Saludos! (Aquí arriba)', heading: 'Una máquina de saludos',
+        intro: 'Escribe tu nombre para recibir un saludo amistoso.', label: 'Tu nombre',
+        placeholder: 'Escribe tu nombre', hello: 'Saludar', clear: 'Borrar',
+        empty: 'Por favor, escribe tu nombre.', before: '¡Hola, ', after: '!'
+      },
+      fr: {
+        title: 'Bonjour ! (Ici en haut)', heading: 'Une machine à salutations',
+        intro: 'Saisis ton prénom pour recevoir un bonjour chaleureux.', label: 'Ton prénom',
+        placeholder: 'Saisis ton prénom', hello: 'Dire bonjour', clear: 'Effacer',
+        empty: 'Merci de saisir ton prénom.', before: 'Bonjour, ', after: ' !'
+      },
+      de: {
+        title: 'Hallo! (Hier oben)', heading: 'Eine Begrüßungsmaschine',
+        intro: 'Gib deinen Namen ein, um freundlich begrüßt zu werden.', label: 'Dein Name',
+        placeholder: 'Gib deinen Namen ein', hello: 'Hallo sagen', clear: 'Löschen',
+        empty: 'Bitte gib deinen Namen ein.', before: 'Hallo, ', after: '!'
+      }
+    };
+    let currentLanguage = 'en';
+    let messageState = ''; // Empty, error, or greeting.
+    let greetedName = '';
+
+    // Reuse this function after submitting or changing languages.
+    function showMessage() {
+      const words = translations[currentLanguage];
+      if (messageState === 'error') {
+        message.textContent = words.empty;
+      } else if (messageState === 'greeting') {
+        message.textContent = words.before + greetedName + words.after;
+      } else {
+        message.textContent = '';
+      }
+    }
+
+    const languageButtons = document.querySelectorAll('[data-language]');
+    languageButtons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        currentLanguage = button.dataset.language;
+        const words = translations[currentLanguage];
+        document.documentElement.lang = currentLanguage;
+        document.title = words.title;
+        document.getElementById('heading').textContent = words.heading;
+        document.getElementById('intro').textContent = words.intro;
+        document.querySelector('label[for="name-input"]').textContent = words.label;
+        nameInput.placeholder = words.placeholder;
+        document.getElementById('hello-button').textContent = words.hello;
+        clearButton.textContent = words.clear;
+        languageButtons.forEach(function (languageButton) {
+          languageButton.setAttribute('aria-pressed', languageButton === button ? 'true' : 'false');
+        });
+        showMessage();
+      });
+    });
+
     // This runs when you click Say Hello or press Enter in the text box.
     form.addEventListener('submit', function (event) {
       event.preventDefault(); // Keep the form from reloading the page.
-      const name = nameInput.value.trim(); // Remove spaces at either end.
-
-      if (name === '') {
-        message.textContent = 'Please enter your name.';
-      } else {
-        message.textContent = 'Hello, ' + name + '!';
-      }
+      greetedName = nameInput.value.trim(); // Remove spaces at either end.
+      messageState = greetedName === '' ? 'error' : 'greeting';
+      showMessage();
     });
 
     // Clear both the text box and the greeting, then let you type again.
     clearButton.addEventListener('click', function () {
       nameInput.value = '';
-      message.textContent = '';
+      messageState = '';
+      greetedName = '';
+      showMessage();
       nameInput.focus();
     });
   </script>
