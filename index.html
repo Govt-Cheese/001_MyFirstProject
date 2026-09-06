@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Greetings! (Up here)</title>
+  <style>
+    /* CSS controls how the page looks. */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      font-family: Arial, sans-serif;
+      color: #1e293b;
+      background: #f5f7fb;
+      text-align: center;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+    }
+    h1 {
+      margin: 0 0 20px;
+      font-size: clamp(2.5rem, 7vw, 4rem);
+      letter-spacing: -0.04em;
+    }
+    p {
+      margin: 0 0 28px;
+      color: #475569;
+      font-size: 1.125rem;
+      line-height: 1.6;
+    }
+    /* Keep the name field and buttons together in a small, tidy form. */
+    form {
+      width: 100%;
+      max-width: 400px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #94a3b8;
+      border-radius: 8px;
+      background: white;
+      color: #1e293b;
+      font: inherit;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    button {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid #1e293b;
+      outline-offset: 4px;
+    }
+    #clear-button { background: #e2e8f0; color: #1e293b; }
+    #clear-button:hover { background: #cbd5e1; }
+    #message {
+      min-height: 1.6em;
+      margin: 24px 0 0;
+      overflow-wrap: anywhere;
+    }
+    .footer-note, footer {
+      color: #64748b;
+      font-size: 0.75rem;
+      line-height: 1.5;
+    }
+    .footer-note {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    footer {
+      padding: 20px 24px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>A Greeting Machine</h1>
+    <p>Enter your name to get a friendly hello.</p>
+    <!-- HTML describes the text field, buttons, and greeting area. -->
+    <form id="greeting-form">
+      <label for="name-input">Your name</label>
+      <input id="name-input" type="text" autocomplete="given-name" placeholder="Enter your name">
+      <div class="buttons">
+        <button type="submit">Say Hello</button>
+        <button id="clear-button" type="button">Clear</button>
+      </div>
+      <p id="message" aria-live="polite"></p>
+    </form>
+  </main>
+  <p class="footer-note">Thank you for educating me with the tools I need. This is like teaching someone how to use a web browser in order to learn how to Google as a skill.</p>
+  <footer>
+    <!-- Update this date and time whenever you edit the website. -->
+    Last edited: <time datetime="2026-09-05T20:41:54-05:00">2026-09-05 20:41:54 (UTC-05:00)</time>
+  </footer>
+  <script>
+    // Save references to the HTML elements so we can use them below.
+    const form = document.getElementById('greeting-form');
+    const nameInput = document.getElementById('name-input');
+    const message = document.getElementById('message');
+    const clearButton = document.getElementById('clear-button');
+
+    // This runs when you click Say Hello or press Enter in the text box.
+    form.addEventListener('submit', function (event) {
+      event.preventDefault(); // Keep the form from reloading the page.
+      const name = nameInput.value.trim(); // Remove spaces at either end.
+
+      if (name === '') {
+        message.textContent = 'Please enter your name.';
+      } else {
+        message.textContent = 'Hello, ' + name + '!';
+      }
+    });
+
+    // Clear both the text box and the greeting, then let you type again.
+    clearButton.addEventListener('click', function () {
+      nameInput.value = '';
+      message.textContent = '';
+      nameInput.focus();
+    });
+  </script>
+</body>
+</html>
