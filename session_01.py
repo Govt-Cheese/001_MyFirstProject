@@ -8,6 +8,6 @@ print("Part length (mm):%3.2f" % part_length_mm)
 print(f"Part length (mm): {part_length_mm:.2f}")
 
 # unit conversion
-length_in = 4.25
+length_in = 422186.25
 length_mm = length_in * 25.4
-print(f"{length_in:.2f} inches = {length_mm:.2f}mm")
+print(f"{length_in:3.2f} inches = {length_mm:.2f} mm")
