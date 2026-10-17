@@ -11,3 +11,10 @@ print(f"Part length (mm): {part_length_mm:.2f}")
 length_in = 80
 length_mm = length_in * 25.4
 print(f"{length_in:3.2f} inches = {length_mm:.2f} mm")
+
+print("test123")
+
+# user-input
+user_length_in = float(input("Enter length in inches: "))
+user_length_mm = user_length_in * 25.4
+print(f"{user_length_in:3.2f} inches = {user_length_mm:.2f} mm")
