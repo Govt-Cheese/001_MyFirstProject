@@ -18,3 +18,13 @@ print("test123")
 user_length_in = float(input("Enter length in inches: "))
 user_length_mm = user_length_in * 25.4
 print(f"{user_length_in:3.2f} inches = {user_length_mm:.2f} mm")
+
+# maximum length check
+max_length_mm = 1000;
+
+if user_length_mm > max_length_mm:
+    print("Warning: length exceeds the 1000mm limit!!")
+else:
+    print("Length is within the 1000mm limit")
+
+print("test234")
