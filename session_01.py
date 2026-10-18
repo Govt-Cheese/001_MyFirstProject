@@ -30,4 +30,13 @@ elif user_length_mm > max_length_mm:
 else:
     print("Length is within the 1000 mm limit.")
 
-print("test2345")
+print("test234")
+
+# input lengths (as a batch)
+sample_lengths_in = [10.0, 40.0, 80.0]
+
+for sample_length_in in sample_lengths_in:
+    sample_length_mm = sample_length_in * 25.4
+    print(f"{sample_length_in:.2f} inches = {sample_length_mm:.2f} mm")
+
+print("test345")
