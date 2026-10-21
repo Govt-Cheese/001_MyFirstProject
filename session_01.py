@@ -15,9 +15,9 @@ print(f"{length_in:3.2f} inches = {length_mm:.2f} mm")
 print("test123")
 
 # user-input
-user_length_in = float(input("Enter length in inches: "))
-user_length_mm = user_length_in * 25.4
-print(f"{user_length_in:3.2f} inches = {user_length_mm:.2f} mm")
+user_length_inches = float(input("Enter length in inches: "))
+user_length_mm = user_length_inches * 25.4
+print(f"{user_length_inches:3.2f} inches = {user_length_mm:.2f} mm")
 
 # maximum length check
 max_length_mm = 1000
@@ -33,10 +33,22 @@ else:
 print("test234")
 
 # input lengths (as a batch)
-sample_lengths_in = [10.0, 40.0, 80.0]
+sample_lengths_inches = [10.0, 40.0, 80.0]
 
-for sample_length_in in sample_lengths_in:
-    sample_length_mm = sample_length_in * 25.4
-    print(f"{sample_length_in:.2f} inches = {sample_length_mm:.2f} mm")
+for sample_length_inches in sample_lengths_inches:
+    sample_length_mm = sample_length_inches * 25.4
+    print(f"{sample_length_inches:.2f} inches = {sample_length_mm:.2f} mm")
 
-print("test345")
+print("test34")
+max_length_mm = 1000
+critical_length_mm = 2000
+
+for sample_length_inches in sample_lengths_inches:
+    sample_length_mm = sample_length_inches * 25.4
+
+    if sample_length_mm > critical_length_mm:
+        print(f"{sample_length_inches:.2f} inches = {sample_length_mm:.2f} mm -> CRITICAL")
+    elif sample_length_mm > max_length_mm:
+        print(f"{sample_length_inches:.2f} inches = {sample_length_mm:.2f} mm -> WARNING")
+    else:
+        print(f"{sample_length_inches:.2f} inches = {sample_length_mm:.2f} mm -> OK")
